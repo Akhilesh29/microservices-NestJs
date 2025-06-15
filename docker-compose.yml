@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./apps/api-gateway/Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - user-service
+      - product-service
+      - order-service
+      - notification-service
+    environment:
+      - NODE_ENV=development
+      - USER_SERVICE_URL=http://user-service:3001
+      - PRODUCT_SERVICE_URL=http://product-service:3002
+      - ORDER_SERVICE_URL=http://order-service:3003
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3004
+
+  user-service:
+    build:
+      context: .
+      dockerfile: ./apps/user-service/Dockerfile
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mongodb
+      - rabbitmq
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongodb:27017/user-service
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+
+  product-service:
+    build:
+      context: .
+      dockerfile: ./apps/product-service/Dockerfile
+    ports:
+      - "3002:3002"
+    depends_on:
+      - mongodb
+      - rabbitmq
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongodb:27017/product-service
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+
+  order-service:
+    build:
+      context: .
+      dockerfile: ./apps/order-service/Dockerfile
+    ports:
+      - "3003:3003"
+    depends_on:
+      - postgres
+      - rabbitmq
+    environment:
+      - NODE_ENV=development
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=order-service
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: ./apps/notification-service/Dockerfile
+    ports:
+      - "3004:3004"
+    depends_on:
+      - rabbitmq
+    environment:
+      - NODE_ENV=development
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  postgres:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=order-service
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+volumes:
+  mongodb_data:
+  postgres_data:
+  rabbitmq_data: 
